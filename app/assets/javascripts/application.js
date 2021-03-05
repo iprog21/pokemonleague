@@ -13,7 +13,10 @@
 //= require rails-ujs
 //= require activestorage
 //= require turbolinks
-//= require jquery3
+//= require jquery
+//= require datatables
 //= require popper
 //= require bootstrap-sprockets
 //= require_tree .
+
+var AUTH_TOKEN = $('meta[name=csrf-token]').attr('content');

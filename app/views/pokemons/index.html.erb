@@ -1,31 +1,137 @@
+<% content_for :css do %>
+<style>
+  .pokemon-lineup{
+    border: 1px solid #ddd;
+    padding: 25px;
+    text-align: center;
+  }
+</style>
+<% end %>
+<div class="container">
 <div class="row">
-  <div class="col-lg-8">
-    
+  <div class="col-lg-6">
+    <h1 class='text-center'>Pokemon Lineup</h1>
+    <div class="row">
+      <% for i in 1..6 %>
+        <div class="col-lg-4 pokemon-lineup">
+          <% if PokemonLineup.is_occupied?(i) %>
+            <%= link_to PokemonLineup.pokemon_on_lineup(i), PokemonLineup.pokemon_url(i), class: 'pokemon' %>  
+          <% else %>
+            <%= PokemonLineup.pokemon_on_lineup(i) %>  
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+    <br>
+    <div class="row">
+      <div class="col-lg-12">
+        <h1 class='text-center'>Pokemon Data</h1>
+          <iframe id="pokemon-data" width="100%" height="600px" src="about:blank">
+            <p>Your browser does not support iframes.</p>
+        </iframe>
+      </div>
+    </div>
   </div>
-  <div class="col-lg-4">
-    <h1>Pokedex Area</h1>
+  <div class="col-lg-6">
+    <h1 class='text-center'>Pokedex Area</h1>
     <strong>Pokedex Filter</strong>
     <%= form_for(:none, url: request.url, method: :get) do |f| %>
       <%= select_tag('pokedex_id', options_for_select(pokedex_lists, @pokedex_id), prompt: "Select Pokedex", class: "form-control", onchange: 'this.form.submit();') %>
     <% end %>
     <br>
-    <table class="table table-bordered table-striped">
-      <thead>
-        <tr>
-          <th>Entry #</th>
-          <th>Pokemon</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% @pokemon_entries.each do |entry| %>
+    <div class="table-responsive">
+      <table id="table-pokedex" class="table table-bordered table-striped table-condensed">
+        <thead>
           <tr>
-            <td><%= entry.entry_number %></td>
-            <td>
-              <%= entry.pokemon_species.name %>
-            </td>
+            <th width="60%">Pokemon</th>
+            <th>Action</th>
           </tr>
-        <% end %>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          <% @pokemon_entries.each do |entry| %>
+            <tr>
+              <td>
+                <%= entry.pokemon_species.name %>
+              </td>
+              <td>
+                <% if !PokemonLineup.moved_already?(entry.pokemon_species.name) %>
+                  <%= link_to 'Move to Lineup', move_to_lineup_pokemons_path(pokedexid: @pokedex_id, entry_number: entry.entry_number, pokemon: entry.pokemon_species.name, pokemon_url: entry.pokemon_species.url ), class: 'btn btn-primary btn-md btn-block', data: { toggle: 'modal', target: '#pokemon-lineup-modal', pokemon: entry.pokemon_species.name } %>
+                <% else %>
+                  <div class="alert alert-info">
+                    Already Lineup
+                  </div>
+                <% end %>              
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
+</div>
+<% content_for :modal do %>
+  <div class="modal fade" id="pokemon-lineup-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-pokemon-title"></h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+         <%= select_tag('lineup', options_for_select(available_lineups), prompt: "Select Lineup", class: "form-control") %>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button id="btn-move" type="button" class="btn btn-primary">Move</button>
+      </div>
+    </div>
+  </div>
+</div>
+<% end %>
+
+<% content_for :js do %>
+<script type='text/javascript'>
+  $(document).ready(function() {
+    $("#table-pokedex").dataTable();
+
+    $('#pokemon-lineup-modal').on('shown.bs.modal', function (e) {
+      var url = $(e.relatedTarget).attr('href');
+      var pokemon = $(e.relatedTarget).data('pokemon');
+      $('#modal-pokemon-title').html("Move "+ pokemon + " to lineup?");
+      $('#pokemon-lineup-modal').attr('url', url);
+    })
+
+    $('#btn-move').on('click', function(){
+      var url = $('#pokemon-lineup-modal').attr('url');
+      var lineup = $('#lineup').val();
+
+      if(lineup.length == 0){
+        alert('No selected lineup');
+      }else{
+        $.ajax({
+          url: url,
+          method: 'post',
+          data: { 
+            authenticity_token: AUTH_TOKEN,
+            lineup: lineup 
+          },
+          success: function(response) {
+            location.reload();
+          }
+        });
+      }
+    });
+
+    $('.pokemon').on('click', function(e){
+      e.preventDefault();
+      var api_url = $(this).attr('href');
+      // var json_data = $.getJSON(api_url);
+      $('#pokemon-data').attr('src', api_url);
+    });
+
+  });
+</script>
+<% end %>
