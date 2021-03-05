@@ -3,6 +3,29 @@
     
   </div>
   <div class="col-lg-4">
-    
+    <h1>Pokedex Area</h1>
+    <strong>Pokedex Filter</strong>
+    <%= form_for(:none, url: request.url, method: :get) do |f| %>
+      <%= select_tag('pokedex_id', options_for_select(pokedex_lists, @pokedex_id), prompt: "Select Pokedex", class: "form-control", onchange: 'this.form.submit();') %>
+    <% end %>
+    <br>
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>Entry #</th>
+          <th>Pokemon</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @pokemon_entries.each do |entry| %>
+          <tr>
+            <td><%= entry.entry_number %></td>
+            <td>
+              <%= entry.pokemon_species.name %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
   </div>
 </div>
